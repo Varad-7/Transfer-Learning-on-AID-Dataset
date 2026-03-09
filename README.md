@@ -1,9 +1,5 @@
 # Transfer Learning on AID Dataset — GNR 638 Assignment 2
 
-> **Course:** GNR 638 — Machine Learning for Remote Sensing II  
-> **Institute:** IIT Bombay | **Semester:** Spring 2025–26  
-> **Team:** Shikhar Verma (22B2201) · Varad Vikas Patil (22B2270) · Aarushi Agarwal (21D070003)
-
 ---
 
 ## Overview
