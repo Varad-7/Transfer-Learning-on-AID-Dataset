@@ -62,8 +62,10 @@ This project evaluates three pre-trained CNN architectures — **ResNet50**, **E
 ## Prerequisites
 
 - Python 3.9+
-- macOS / Linux (Apple Silicon MPS or CUDA GPU recommended; CPU works but is slow)
+- macOS / Linux / **Windows 10 or 11**
+- GPU: Apple Silicon MPS, CUDA GPU, or CPU (slow)
 - `pdflatex` (optional — only needed to compile the report)
+- **Windows only:** [Git for Windows](https://git-scm.com/download/win) and [Python from python.org](https://www.python.org/downloads/windows/)
 
 ---
 
@@ -93,12 +95,12 @@ Each class folder should contain `.jpg` images.
 
 ### 3. Create the virtual environment and install dependencies
 
+**macOS / Linux:**
 ```bash
 bash setup_env.sh
 ```
 
-Or manually:
-
+Or manually on macOS / Linux:
 ```bash
 python3 -m venv venv
 source venv/bin/activate
@@ -106,17 +108,49 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
+**Windows (Command Prompt or PowerShell):**
+```bat
+python -m venv venv
+venv\Scripts\activate
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+> **Windows + CUDA:** If you have an NVIDIA GPU, install the CUDA-enabled PyTorch build before the rest of the requirements:
+> ```bat
+> pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+> pip install -r requirements.txt
+> ```
+
 ---
 
 ## Running the Code
 
 ### Run All Scenarios at Once
 
+**macOS / Linux:**
 ```bash
 bash run_all.sh
 ```
 
-This activates the venv and runs all 5 scenarios sequentially with default settings.
+**Windows** — `run_all.sh` is a Bash script and does not run natively. Use one of these options:
+
+*Option A — Git Bash (recommended):*
+```bash
+bash run_all.sh
+```
+
+*Option B — Command Prompt / PowerShell (manual equivalent):*
+```bat
+venv\Scripts\activate
+python scenario_1_linear_probe.py
+python scenario_2_finetuning.py
+python scenario_3_fewshot.py
+python scenario_4_corruption.py
+python scenario_5_layerwise.py
+```
+
+This runs all 5 scenarios sequentially with default settings.
 
 ---
 
@@ -124,8 +158,14 @@ This activates the venv and runs all 5 scenarios sequentially with default setti
 
 Activate the environment first:
 
+**macOS / Linux:**
 ```bash
 source venv/bin/activate
+```
+
+**Windows:**
+```bat
+venv\Scripts\activate
 ```
 
 #### Scenario 1 — Linear Probe Transfer
@@ -245,15 +285,29 @@ python regen_s4_plot.py
 python regen_s5_plot.py
 ```
 
+> Works identically on macOS, Linux, and Windows.
+
 ---
 
 ## Compiling the Report
 
+**macOS / Linux:**
 ```bash
 cd report
 pdflatex main.tex
 pdflatex main.tex   # Run twice to resolve cross-references
 ```
+
+**Windows:**
+
+Install a LaTeX distribution such as [MiKTeX](https://miktex.org/download) or [TeX Live](https://tug.org/texlive/), then:
+```bat
+cd report
+pdflatex main.tex
+pdflatex main.tex
+```
+
+Alternatively, open `report/main.tex` in [TeXstudio](https://www.texstudio.org/) or [Overleaf](https://www.overleaf.com) and compile from the GUI.
 
 The compiled PDF will be `report/main.pdf`.
 
@@ -261,10 +315,17 @@ The compiled PDF will be `report/main.pdf`.
 
 ## Hardware Notes
 
+| Platform | Device | Notes |
+|----------|--------|-------|
+| macOS (Apple Silicon) | M1 / M2 / M3 | MPS acceleration used automatically |
+| Linux / Windows | NVIDIA GPU (CUDA) | CUDA used automatically if available |
+| Any | CPU only | Works, but significantly slower |
+
 - Models were developed and tested on an **Apple M2 (8 GB unified memory)** device.
 - ConvNeXt-Tiny requires a reduced batch size (`--batch_size 16` or `8`) to avoid memory exhaustion on 8 GB devices.
 - On CUDA GPUs with ≥ 8 GB VRAM, the default batch size of 32 works for all models.
 - Training times per scenario per model are approximately 5–20 minutes depending on hardware.
+- **Windows note:** `num_workers > 0` in DataLoader can cause issues on Windows due to multiprocessing differences. The scripts already use `num_workers=0` to avoid this.
 
 ---
 
