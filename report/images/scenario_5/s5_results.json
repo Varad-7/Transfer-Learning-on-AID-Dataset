@@ -1,0 +1,150 @@
+{
+  "accuracy_results": [
+    {
+      "model_name": "resnet50",
+      "layer": "early",
+      "layer_name": "layer1",
+      "depth_idx": 0,
+      "accuracy": 78.05575411007862,
+      "train_accuracy": 97.47944225956383,
+      "feature_dim": 256
+    },
+    {
+      "model_name": "resnet50",
+      "layer": "middle",
+      "layer_name": "layer2",
+      "depth_idx": 1,
+      "accuracy": 88.84917798427449,
+      "train_accuracy": 100.0,
+      "feature_dim": 512
+    },
+    {
+      "model_name": "resnet50",
+      "layer": "late",
+      "layer_name": "layer4",
+      "depth_idx": 2,
+      "accuracy": 89.13509649749821,
+      "train_accuracy": 100.0,
+      "feature_dim": 2048
+    },
+    {
+      "model_name": "efficientnet_b0",
+      "layer": "early",
+      "layer_name": "blocks.1",
+      "depth_idx": 0,
+      "accuracy": 58.25589706933524,
+      "train_accuracy": 62.53128351805506,
+      "feature_dim": 24
+    },
+    {
+      "model_name": "efficientnet_b0",
+      "layer": "middle",
+      "layer_name": "blocks.3",
+      "depth_idx": 1,
+      "accuracy": 82.1300929235168,
+      "train_accuracy": 93.6539149088309,
+      "feature_dim": 80
+    },
+    {
+      "model_name": "efficientnet_b0",
+      "layer": "late",
+      "layer_name": "blocks.6",
+      "depth_idx": 2,
+      "accuracy": 88.63473909935668,
+      "train_accuracy": 100.0,
+      "feature_dim": 320
+    },
+    {
+      "model_name": "convnext_tiny",
+      "layer": "early",
+      "layer_name": "stages.0",
+      "depth_idx": 0,
+      "accuracy": 74.98213009292351,
+      "train_accuracy": 88.73793350017877,
+      "feature_dim": 96
+    },
+    {
+      "model_name": "convnext_tiny",
+      "layer": "middle",
+      "layer_name": "stages.1",
+      "depth_idx": 1,
+      "accuracy": 87.77698355968549,
+      "train_accuracy": 99.91061851984269,
+      "feature_dim": 192
+    },
+    {
+      "model_name": "convnext_tiny",
+      "layer": "late",
+      "layer_name": "stages.3",
+      "depth_idx": 2,
+      "accuracy": 90.49320943531094,
+      "train_accuracy": 100.0,
+      "feature_dim": 768
+    }
+  ],
+  "norm_stats": [
+    {
+      "model_name": "resnet50",
+      "layer": "early",
+      "layer_name": "layer1",
+      "mean_norm": 18.57541847229004,
+      "std_norm": 0.4990081489086151
+    },
+    {
+      "model_name": "resnet50",
+      "layer": "middle",
+      "layer_name": "layer2",
+      "mean_norm": 49.326438903808594,
+      "std_norm": 1.8112074136734009
+    },
+    {
+      "model_name": "resnet50",
+      "layer": "late",
+      "layer_name": "layer4",
+      "mean_norm": 7.0051655769348145,
+      "std_norm": 0.9373013377189636
+    },
+    {
+      "model_name": "efficientnet_b0",
+      "layer": "early",
+      "layer_name": "blocks.1",
+      "mean_norm": 14.171612739562988,
+      "std_norm": 1.4611191749572754
+    },
+    {
+      "model_name": "efficientnet_b0",
+      "layer": "middle",
+      "layer_name": "blocks.3",
+      "mean_norm": 24.727611541748047,
+      "std_norm": 3.9000203609466553
+    },
+    {
+      "model_name": "efficientnet_b0",
+      "layer": "late",
+      "layer_name": "blocks.6",
+      "mean_norm": 29.14527130126953,
+      "std_norm": 3.097982168197632
+    },
+    {
+      "model_name": "convnext_tiny",
+      "layer": "early",
+      "layer_name": "stages.0",
+      "mean_norm": 11.159409523010254,
+      "std_norm": 0.8229571580886841
+    },
+    {
+      "model_name": "convnext_tiny",
+      "layer": "middle",
+      "layer_name": "stages.1",
+      "mean_norm": 28.692007064819336,
+      "std_norm": 3.33378529548645
+    },
+    {
+      "model_name": "convnext_tiny",
+      "layer": "late",
+      "layer_name": "stages.3",
+      "mean_norm": 10.449935913085938,
+      "std_norm": 1.089342713356018
+    }
+  ]
+}

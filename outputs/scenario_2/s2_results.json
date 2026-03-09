@@ -1,0 +1,98 @@
+[
+  {
+    "model_name": "efficientnet_b0",
+    "strategy": "linear_probe",
+    "pct_unfrozen": 0.9498321543023714,
+    "val_acc": 79.27090779127948,
+    "total_params": 4045978,
+    "trainable_params": 38430
+  },
+  {
+    "model_name": "efficientnet_b0",
+    "strategy": "last_block",
+    "pct_unfrozen": 18.676868732355935,
+    "val_acc": 93.78127233738384,
+    "total_params": 4045978,
+    "trainable_params": 755662
+  },
+  {
+    "model_name": "efficientnet_b0",
+    "strategy": "full_ft",
+    "pct_unfrozen": 100.0,
+    "val_acc": 96.56897784131523,
+    "total_params": 4045978,
+    "trainable_params": 4045978
+  },
+  {
+    "model_name": "efficientnet_b0",
+    "strategy": "selective_20pct",
+    "pct_unfrozen": 21.65899073104204,
+    "val_acc": 92.92351679771265,
+    "total_params": 4045978,
+    "trainable_params": 876318
+  },
+  {
+    "model_name": "convnext_tiny",
+    "strategy": "linear_probe",
+    "pct_unfrozen": 0.08837346916830459,
+    "val_acc": 91.85132237312366,
+    "total_params": 27843198,
+    "trainable_params": 24606
+  },
+  {
+    "model_name": "convnext_tiny",
+    "strategy": "last_block",
+    "pct_unfrozen": 55.651646050141224,
+    "val_acc": 95.06790564689064,
+    "total_params": 27843198,
+    "trainable_params": 15495198
+  },
+  {
+    "model_name": "convnext_tiny",
+    "strategy": "full_ft",
+    "pct_unfrozen": 100.0,
+    "val_acc": 45.818441744102934,
+    "total_params": 27843198,
+    "trainable_params": 27843198
+  },
+  {
+    "model_name": "convnext_tiny",
+    "strategy": "selective_20pct",
+    "pct_unfrozen": 25.67164159806643,
+    "val_acc": 94.13867047891351,
+    "total_params": 27843198,
+    "trainable_params": 7147806
+  },
+  {
+    "model_name": "resnet50",
+    "strategy": "linear_probe",
+    "pct_unfrozen": 0.26080313449134396,
+    "val_acc": 76.98355968548964,
+    "total_params": 23569502,
+    "trainable_params": 61470
+  },
+  {
+    "model_name": "resnet50",
+    "strategy": "last_block",
+    "pct_unfrozen": 63.75275133093606,
+    "val_acc": 95.8541815582559,
+    "total_params": 23569502,
+    "trainable_params": 15026206
+  },
+  {
+    "model_name": "resnet50",
+    "strategy": "full_ft",
+    "pct_unfrozen": 100.0,
+    "val_acc": 96.78341672623303,
+    "total_params": 23569502,
+    "trainable_params": 23569502
+  },
+  {
+    "model_name": "resnet50",
+    "strategy": "selective_20pct",
+    "pct_unfrozen": 23.660805391645525,
+    "val_acc": 91.42244460328806,
+    "total_params": 23569502,
+    "trainable_params": 5576734
+  }
+]

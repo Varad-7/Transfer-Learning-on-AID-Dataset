@@ -1,0 +1,26 @@
+[
+  {
+    "model_name": "resnet50",
+    "final_val_acc": 83.20228734810578,
+    "total_params": 23569502,
+    "trainable_params": 61470,
+    "MACs": 4100000000.0,
+    "FLOPs": 8200000000.0
+  },
+  {
+    "model_name": "efficientnet_b0",
+    "final_val_acc": 83.70264474624732,
+    "total_params": 4045978,
+    "trainable_params": 38430,
+    "MACs": 390000000.0,
+    "FLOPs": 780000000.0
+  },
+  {
+    "model_name": "convnext_tiny",
+    "final_val_acc": 91.92280200142959,
+    "total_params": 27843198,
+    "trainable_params": 24606,
+    "MACs": 4500000000.0,
+    "FLOPs": 9000000000.0
+  }
+]
