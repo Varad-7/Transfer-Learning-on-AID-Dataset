@@ -110,6 +110,30 @@ All models were evaluated using appropriate metrics, including Validation Accura
 
 
 % ═══════════════════════════════════════════════════
+\section{Model Efficiency Metrics (Mandatory)}
+\label{sec:efficiency}
+
+As required in the assignment, we report the \textbf{number of parameters, MACs, and FLOPs} for each backbone architecture. These metrics are computed through the shared model utility (\texttt{get\_model\_info}) and are printed in the terminal logs during scenario execution (training/evaluation scripts).
+
+\begin{table}[H]
+    \centering
+    \caption{Model Complexity and Compute Cost (Input: 224$\times$224)}
+    \begin{tabular}{lrrr}
+        \toprule
+        Model & Total Parameters & MACs (per image) & FLOPs (per image) \\
+        \midrule
+        ResNet50 & 23,569,502 & $4.10\times10^9$ & $8.20\times10^9$ \\
+        EfficientNet-B0 & 4,045,978 & $3.90\times10^8$ & $7.80\times10^8$ \\
+        ConvNeXt-Tiny & 27,843,198 & $4.50\times10^9$ & $9.00\times10^9$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\textbf{Interpretation:}
+EfficientNet-B0 is the most compute-efficient model by a large margin (lowest parameters and MAC/FLOP cost), while ConvNeXt-Tiny is the heaviest. This efficiency context is important when interpreting accuracy and robustness trade-offs across all scenarios.
+
+
+% ═══════════════════════════════════════════════════
 \section{Hardware Limitations and Design Challenges}
 \label{sec:challenges}
 
@@ -127,7 +151,30 @@ It was observed that while ResNet50 and EfficientNet-B0 could comfortably train 
 In the Linear Probe setting, the pre-trained weights of the convolutional backbones were entirely frozen. Only a newly initialized linear classifier head was trained on the AID dataset. This scenario serves to evaluate the pure \textit{baseline feature extraction capabilities} of the models trained on ImageNet when transferred to a specialized domain (Aerial imagery).
 
 \subsection{Results and Observations}
-The confusion matrices below illustrate the classification performance of each frozen backbone. A strong diagonal represents accurate classification, while off-diagonal elements identify classes where the ImageNet features transferred poorly.
+
+\subsubsection{Training and Validation Accuracy Curves}
+The following learning curves show optimization behavior when only the final linear classifier is trained and the backbone remains frozen.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_1/s1_resnet50_curves.png}
+    \caption{Training and validation curves --- ResNet50 (Linear Probe).}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_1/s1_efficientnet_b0_curves.png}
+    \caption{Training and validation curves --- EfficientNet-B0 (Linear Probe).}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_1/s1_convnext_tiny_curves.png}
+    \caption{Training and validation curves --- ConvNeXt-Tiny (Linear Probe).}
+\end{figure}
+
+\subsubsection{Confusion Matrices}
+The confusion matrices below illustrate class-wise transfer quality. A strong diagonal indicates successful transfer; off-diagonal concentration indicates class confusion.
 
 \begin{figure}[H]
     \centering
@@ -148,7 +195,51 @@ The confusion matrices below illustrate the classification performance of each f
     \label{fig:s1_cm}
 \end{figure}
 
-\textbf{Analysis:} The results indicate that architectures with modernized inductive biases (such as ConvNeXt) typically yield linearly separable features that transfer slightly more effectively out-of-the-box compared to older architectures like ResNet.
+\subsubsection{Feature Embedding Visualization (PCA)}
+To inspect feature separability under frozen transfer, we projected the final-layer embeddings into 2D using PCA.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_1/s1_resnet50_pca.png}
+    \caption{PCA feature embedding --- ResNet50 (Linear Probe).}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_1/s1_efficientnet_b0_pca.png}
+    \caption{PCA feature embedding --- EfficientNet-B0 (Linear Probe).}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_1/s1_convnext_tiny_pca.png}
+    \caption{PCA feature embedding --- ConvNeXt-Tiny (Linear Probe).}
+\end{figure}
+
+\subsubsection{Quantitative Summary and Analysis}
+
+\begin{table}[H]
+    \centering
+    \caption{Scenario 1 Linear Probe Accuracy Summary}
+    \begin{tabular}{lr}
+        \toprule
+        Model & Final Validation Accuracy \\
+        \midrule
+        ResNet50 & 83.20\% \\
+        EfficientNet-B0 & 83.70\% \\
+        ConvNeXt-Tiny & 91.92\% \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\textbf{Separability of learned features:}
+PCA plots show tighter and more class-discriminative clusters for ConvNeXt-Tiny than for ResNet50 and EfficientNet-B0, aligning with its higher linear-probe accuracy. This indicates that ConvNeXt's pretrained features are more directly reusable for aerial-scene discrimination.
+
+\textbf{Transfer quality without adaptation:}
+Because only the linear head is trained, performance here directly reflects the quality of frozen ImageNet features on AID. All three models transfer meaningfully (\(>83\%\) for ResNet50/EfficientNet-B0, \(\approx92\%\) for ConvNeXt-Tiny), showing strong out-of-domain generalization even without backbone updates.
+
+\textbf{Failure cases:}
+From confusion matrices, residual errors are concentrated among semantically and visually similar classes (for example, dense urban categories and structurally similar land-use regions), where frozen features do not fully separate subtle intra-class texture and spatial-layout differences. These failure modes motivate Scenario 2 fine-tuning.
 
 % ═══════════════════════════════════════════════════
 \section{Scenario 2: Fine-Tuning Strategies}
@@ -163,9 +254,16 @@ To determine the optimal balance between computational efficiency and model accu
     \item \textbf{Full Fine-tuning}: 100\% of parameters unfrozen.
 \end{itemize}
 
-\subsection{Bonus: Efficiency Analysis (Parameters Tuned vs. Performance)}
-To claim the \textbf{10 bonus marks for Efficiency Analysis}, we explicitly plotted the validation accuracy as a mathematical function of the percentage of parameters actively being tuned.
-The validation accuracy of each strategy was evaluated to determine the trade-off.
+\subsection{Reported Metrics and Visualizations}
+Scenario 2 requires comparing adaptation quality across different unfreezing depths while keeping all other hyperparameters fixed. We therefore report:
+\begin{itemize}[nosep]
+    \item validation accuracy vs. percentage of unfrozen parameters,
+    \item training and validation curves for every strategy,
+    \item gradient norm statistics across layers,
+    \item convergence stability (training loss vs. epoch).
+\end{itemize}
+
+\subsubsection{Validation Accuracy vs. Percentage of Unfrozen Parameters}
 
 \begin{table}[H]
     \centering
@@ -196,7 +294,138 @@ The validation accuracy of each strategy was evaluated to determine the trade-of
     \caption{Validation Accuracy as a function of the percentage of unfrozen parameters. This highlights diminishing returns as we approach Full Fine-tuning.}
 \end{figure}
 
-\textbf{Analysis:} As seen in the table and plot, full fine-tuning generally achieves the highest absolute performance, but Last Block fine-tuning closely matches its accuracy while significantly reducing the number of trainable parameters (and thereby, the requisite MACs/backward-pass computations).
+\subsubsection{Training and Validation Curves by Strategy}
+The following plots show training/validation behavior for each strategy-model pair.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_2/s2_resnet50_linear_probe_curves.png}
+    \caption{ResNet50 --- Linear Probe: training and validation curves.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_2/s2_resnet50_last_block_curves.png}
+    \caption{ResNet50 --- Last Block Fine-tuning: training and validation curves.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_2/s2_resnet50_selective_20pct_curves.png}
+    \caption{ResNet50 --- Selective 20\% Unfreezing: training and validation curves.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_2/s2_resnet50_full_ft_curves.png}
+    \caption{ResNet50 --- Full Fine-tuning: training and validation curves.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_2/s2_efficientnet_b0_linear_probe_curves.png}
+    \caption{EfficientNet-B0 --- Linear Probe: training and validation curves.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_2/s2_efficientnet_b0_last_block_curves.png}
+    \caption{EfficientNet-B0 --- Last Block Fine-tuning: training and validation curves.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_2/s2_efficientnet_b0_selective_20pct_curves.png}
+    \caption{EfficientNet-B0 --- Selective 20\% Unfreezing: training and validation curves.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_2/s2_efficientnet_b0_full_ft_curves.png}
+    \caption{EfficientNet-B0 --- Full Fine-tuning: training and validation curves.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_2/s2_convnext_tiny_linear_probe_curves.png}
+    \caption{ConvNeXt-Tiny --- Linear Probe: training and validation curves.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_2/s2_convnext_tiny_last_block_curves.png}
+    \caption{ConvNeXt-Tiny --- Last Block Fine-tuning: training and validation curves.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_2/s2_convnext_tiny_selective_20pct_curves.png}
+    \caption{ConvNeXt-Tiny --- Selective 20\% Unfreezing: training and validation curves.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_2/s2_convnext_tiny_full_ft_curves.png}
+    \caption{ConvNeXt-Tiny --- Full Fine-tuning: training and validation curves.}
+\end{figure}
+
+\subsubsection{Gradient Norm Statistics Across Layers}
+Gradient norm distributions are used to inspect where optimization pressure is concentrated under each fine-tuning strategy.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_2/s2_resnet50_grad_norms.png}
+    \caption{Gradient norm statistics --- ResNet50 strategies.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_2/s2_efficientnet_b0_grad_norms.png}
+    \caption{Gradient norm statistics --- EfficientNet-B0 strategies.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_2/s2_convnext_tiny_grad_norms.png}
+    \caption{Gradient norm statistics --- ConvNeXt-Tiny strategies.}
+\end{figure}
+
+\subsubsection{Convergence Stability (Training Loss vs Epoch)}
+Convergence plots compare optimization stability among strategies for each architecture.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_2/s2_resnet50_convergence.png}
+    \caption{Convergence stability --- ResNet50 (training loss vs. epoch).}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_2/s2_efficientnet_b0_convergence.png}
+    \caption{Convergence stability --- EfficientNet-B0 (training loss vs. epoch).}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_2/s2_convnext_tiny_convergence.png}
+    \caption{Convergence stability --- ConvNeXt-Tiny (training loss vs. epoch).}
+\end{figure}
+
+\subsubsection{Analysis}
+\textbf{How different layers adapt under different strategies:}
+Linear probe leaves all feature extraction fixed, so improvements are limited to class-boundary remapping in the final layer. Last-block fine-tuning and selective 20\% unfreezing allow deeper semantic filters to adapt to aerial textures and spatial layouts, yielding large gains over linear probing. Full fine-tuning gives the model maximum plasticity, but may also destabilize pretrained representations if optimization is aggressive.
+
+\textbf{Early vs. deeper layer modification effects:}
+Updating deeper layers usually improves target-task discrimination with lower risk, because deeper blocks encode task-specific semantics. Updating very early layers changes generic edge/texture detectors and can hurt transfer efficiency unless the source-target domain gap is very large. This is why strategies biased toward deeper layers (last block, selective tail-end unfreezing) often provide strong performance-efficiency trade-offs.
+
+\textbf{Performance and generalization trade-off:}
+For ResNet50 and EfficientNet-B0, increasing unfrozen depth improves peak validation accuracy, with diminishing returns near 100\% unfreezing. However, the ConvNeXt-Tiny full fine-tuning run shows a severe drop (45.82\%), indicating that maximizing trainable parameters does not guarantee better generalization under all optimization and hardware settings.
+
+\textbf{When fine-tuning can reduce robustness:}
+Fine-tuning can reduce robustness when excessive parameter updates overwrite useful pretrained invariances (catastrophic forgetting), especially under limited data, noisy gradients (small effective batch size), or mismatched learning-rate scales for large models. Under these conditions, deeper adaptation may overfit to training distributions and degrade out-of-distribution behavior.
+
+\textbf{Overall conclusion:}
+Scenario 2 supports a practical rule: \textit{unfreeze enough of the deeper backbone to adapt semantics, but avoid unconstrained full-network updates unless optimization is carefully stabilized}. In this study, last-block and selective 20\% unfreezing offered strong accuracy with substantially lower optimization risk than indiscriminate full fine-tuning.
 
 
 % ═══════════════════════════════════════════════════
@@ -206,7 +435,16 @@ The validation accuracy of each strategy was evaluated to determine the trade-of
 \subsection{Data Scarcity Paradigm}
 To simulate operational restraints where labeled aerial data is rare, we trained the models on restricted fractions of the dataset: 100\%, 20\%, and 5\%.
 
-\subsection{Overfitting Gap and Degradation}
+\subsection{Reported Metrics}
+For each model and data fraction, we report:
+\begin{itemize}[nosep]
+    \item final validation accuracy,
+    \item final training accuracy,
+    \item overfitting gap \((\text{Train} - \text{Val})\),
+    \item relative degradation from 100\% data to 5\% data.
+\end{itemize}
+
+\subsubsection{Accuracy and Overfitting Gap}
 
 \begin{table}[H]
     \centering
@@ -228,13 +466,96 @@ To simulate operational restraints where labeled aerial data is rare, we trained
     \end{tabular}
 \end{table}
 
+\subsubsection{Relative Drop from 100\% to 5\% Data}
+\begin{table}[H]
+    \centering
+    \caption{Relative Accuracy Drop under Extreme Data Scarcity}
+    \begin{tabular}{lrrr}
+        \toprule
+        Model & Acc@100\% & Acc@5\% & Relative Drop \((\Delta)\) \\
+        \midrule
+        ResNet50 & 97.28\% & 76.98\% & 20.87\% \\
+        EfficientNet-B0 & 96.71\% & 71.48\% & 26.09\% \\
+        ConvNeXt-Tiny & 64.33\% & 4.22\% & 93.44\% \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsubsection{Aggregate Comparison Plot}
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{images/scenario_3/s3_few_shot_comparison.png}
     \caption{Accuracy degradation highlighting relative drop as training samples decrease.}
 \end{figure}
 
-\textbf{Discussion:} The gap between Training Accuracy and Validation Accuracy acts as a precise indicator of \textbf{overfitting}. When restricted to just 5\% of the data, the models achieve near-perfect Train Accuracies ($\sim$98-99\%) while Validations Accuracies crater. This validates that deep CNNs rapidly memorize sparse datasets, and larger capacity models degrade worse under extreme data scarcity unless heavily regularized.
+\subsubsection{Training Curves by Fraction and Model}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_3/s3_resnet50_100pct_curves.png}
+    \caption{ResNet50 --- 100\% data: training/validation curves.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_3/s3_resnet50_20pct_curves.png}
+    \caption{ResNet50 --- 20\% data: training/validation curves.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_3/s3_resnet50_5pct_curves.png}
+    \caption{ResNet50 --- 5\% data: training/validation curves.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_3/s3_efficientnet_b0_100pct_curves.png}
+    \caption{EfficientNet-B0 --- 100\% data: training/validation curves.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_3/s3_efficientnet_b0_20pct_curves.png}
+    \caption{EfficientNet-B0 --- 20\% data: training/validation curves.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_3/s3_efficientnet_b0_5pct_curves.png}
+    \caption{EfficientNet-B0 --- 5\% data: training/validation curves.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_3/s3_convnext_tiny_100pct_curves.png}
+    \caption{ConvNeXt-Tiny --- 100\% data: training/validation curves.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_3/s3_convnext_tiny_20pct_curves.png}
+    \caption{ConvNeXt-Tiny --- 20\% data: training/validation curves.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_3/s3_convnext_tiny_5pct_curves.png}
+    \caption{ConvNeXt-Tiny --- 5\% data: training/validation curves.}
+\end{figure}
+
+\subsubsection{Analysis}
+\textbf{Overfitting behavior:}
+The train-validation gap grows rapidly as supervision becomes scarce for ResNet50 and EfficientNet-B0 (up to 21.22\% and 28.16\%, respectively, at 5\%), showing classic memorization under low-data regimes.
+
+\textbf{Data efficiency ranking:}
+ResNet50 is most resilient to data reduction, followed by EfficientNet-B0. ConvNeXt-Tiny collapses sharply under 20\% and 5\% data in this setup, indicating optimization instability/underfitting rather than simple overfitting.
+
+\textbf{Generalization implication:}
+In remote sensing with limited labels, model capacity must be paired with stronger regularization or transfer constraints; otherwise, scarce-data training can erase the benefits of pretrained representations.
+
+\textbf{Conclusion:}
+Few-shot performance is governed not only by backbone quality but by \textit{how stably that backbone can be adapted under reduced supervision}. Moderate-capacity models with stable optimization can outperform larger models in low-label settings.
 
 
 % ═══════════════════════════════════════════════════
@@ -244,13 +565,61 @@ To simulate operational restraints where labeled aerial data is rare, we trained
 \subsection{Out-Of-Distribution Robustness}
 Models deployed in the real world face sensor noise, motion artifacts, and lighting variations. We applied synthetically generated Gaussian Noise, Motion Blur, and Brightness shifts to the validation set.
 
+\subsection{Reported Metrics}
+For each corruption, we report:
+\begin{itemize}[nosep]
+    \item corrupted validation accuracy,
+    \item corruption error \(\text{CE}=1-\text{Acc}_{\text{corr}}\),
+    \item relative robustness \(\text{RR}=\text{Acc}_{\text{corr}}/\text{Acc}_{\text{clean}}\).
+\end{itemize}
+
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{images/scenario_4/s4_corruption_results.png}
     \caption{Robustness comparison across diverse corruption algorithms.}
 \end{figure}
 
-\textbf{Conclusion:} Architectures incorporating extensive normalization layers (like LayerNorm in ConvNeXt) typically exhibit slightly higher resistance to contrast and brightness shifts compared to those relying purely on Batch Normalization. However, Gaussian noise severely disrupts spatial features across all architectures.
+\subsection{Detailed Corruption Results}
+\begin{table}[H]
+    \centering
+    \caption{Scenario 4 Corruption Robustness Metrics}
+    \begin{tabular}{llrrr}
+        \toprule
+        Model & Corruption & Corr Acc & Corr Error & Rel Robust \\
+        \midrule
+        resnet50 & gaussian\_noise\_0.05 & 92.21\% & 0.0779 & 0.9527 \\
+        resnet50 & gaussian\_noise\_0.1  & 67.55\% & 0.3245 & 0.6979 \\
+        resnet50 & gaussian\_noise\_0.2  & 22.30\% & 0.7770 & 0.2304 \\
+        resnet50 & motion\_blur          & 42.96\% & 0.5704 & 0.4439 \\
+        resnet50 & brightness            & 95.71\% & 0.0429 & 0.9889 \\
+        \midrule
+        efficientnet\_b0 & gaussian\_noise\_0.05 & 81.77\% & 0.1823 & 0.8468 \\
+        efficientnet\_b0 & gaussian\_noise\_0.1  & 21.37\% & 0.7863 & 0.2213 \\
+        efficientnet\_b0 & gaussian\_noise\_0.2  & 6.29\%  & 0.9371 & 0.0651 \\
+        efficientnet\_b0 & motion\_blur          & 50.04\% & 0.4996 & 0.5181 \\
+        efficientnet\_b0 & brightness            & 95.28\% & 0.0472 & 0.9867 \\
+        \midrule
+        convnext\_tiny & gaussian\_noise\_0.05 & 47.53\% & 0.5247 & 0.9582 \\
+        convnext\_tiny & gaussian\_noise\_0.1  & 33.81\% & 0.6619 & 0.6816 \\
+        convnext\_tiny & gaussian\_noise\_0.2  & 11.44\% & 0.8856 & 0.2305 \\
+        convnext\_tiny & motion\_blur          & 25.66\% & 0.7434 & 0.5173 \\
+        convnext\_tiny & brightness            & 46.03\% & 0.5397 & 0.9280 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Analysis}
+\textbf{Noise sensitivity:}
+Gaussian noise is the most damaging corruption for all models. Accuracy decreases monotonically with noise level, showing that fine-grained aerial textures are highly sensitive to pixel-level perturbations.
+
+\textbf{Blur vs. brightness:}
+Motion blur causes substantial degradation because it removes high-frequency structural cues (roads, edges, building outlines). In contrast, brightness shift is comparatively mild for ResNet50 and EfficientNet-B0, suggesting stronger photometric invariance than spatial-noise invariance.
+
+\textbf{Interpretation caveat for ConvNeXt-Tiny:}
+ConvNeXt-Tiny has a low clean baseline in this scenario (49.61\%), so high relative-robustness values should be interpreted carefully. RR can appear favorable even when absolute corrupted accuracy remains low.
+
+\textbf{Conclusion:}
+OOD robustness in this benchmark is dominated by resilience to high-frequency corruption. Improving robustness likely requires targeted augmentation (strong noise/blur training) and calibration of full fine-tuning protocols to preserve pretrained invariances.
 
 
 % ═══════════════════════════════════════════════════
@@ -259,24 +628,74 @@ Models deployed in the real world face sensor noise, motion artifacts, and light
 
 By attaching a linear classifier to various depths of the frozen networks, we track the hierarchical emergence of semantic capability.
 
+\subsection{Reported Metrics}
+For each model and each probe depth (early, middle, late), we report:
+\begin{itemize}[nosep]
+    \item linear-probe validation accuracy,
+    \item training accuracy of the probe,
+    \item feature dimensionality,
+    \item feature norm statistics (mean and standard deviation).
+\end{itemize}
+
 \subsection{Depth vs. Accuracy}
 \begin{figure}[H]
     \centering
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{images/scenario_5/s5_acc_vs_depth.png}
-        \caption{Validation Accuracy vs Depth}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{images/scenario_5/s5_feature_norms.png}
-        \caption{Feature Norm Extrema vs Depth}
-    \end{subfigure}
-    \caption{Evolution of internal convolutional representations.}
+    \includegraphics[width=\textwidth]{images/scenario_5/s5_acc_vs_depth.png}
+    \caption{Layer-wise linear probe accuracy across Early, Middle, and Late features.}
 \end{figure}
 
-\textbf{Analysis:} Early layers function as rudimentary edge detectors, unable to linearly separate complex classes (low accuracy). As we progress deeper, the receptive field widens, and feature maps combine edges into semantic representations (e.g., textures of "forests" or structures of "buildings"), resulting in drastically improved linear separability.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_5/s5_feature_norms.png}
+    \caption{Feature norm statistics across depth for each model.}
+\end{figure}
+
+\subsection{Quantitative Results}
+\begin{table}[H]
+    \centering
+    \caption{Scenario 5 Layer-wise Probe Accuracy Summary}
+    \begin{tabular}{llrrr}
+        \toprule
+        Model & Layer & Val Acc & Train Acc & Feature Dim \\
+        \midrule
+        resnet50 & early (layer1) & 78.06\% & 97.48\% & 256 \\
+        resnet50 & middle (layer2) & 88.85\% & 100.00\% & 512 \\
+        resnet50 & late (layer4) & 89.14\% & 100.00\% & 2048 \\
+        \midrule
+        efficientnet\_b0 & early (blocks.1) & 58.26\% & 62.53\% & 24 \\
+        efficientnet\_b0 & middle (blocks.3) & 82.13\% & 93.65\% & 80 \\
+        efficientnet\_b0 & late (blocks.6) & 88.63\% & 100.00\% & 320 \\
+        \midrule
+        convnext\_tiny & early (stages.0) & 74.98\% & 88.74\% & 96 \\
+        convnext\_tiny & middle (stages.1) & 87.78\% & 99.91\% & 192 \\
+        convnext\_tiny & late (stages.3) & 90.49\% & 100.00\% & 768 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \caption{Scenario 5 Feature Norm Statistics}
+    \begin{tabular}{llrr}
+        \toprule
+        Model & Layer & Mean Norm & Std Norm \\
+        \midrule
+        resnet50 & early & 18.58 & 0.50 \\
+        resnet50 & middle & 49.33 & 1.81 \\
+        resnet50 & late & 7.01 & 0.94 \\
+        \midrule
+        efficientnet\_b0 & early & 14.17 & 1.46 \\
+        efficientnet\_b0 & middle & 24.73 & 3.90 \\
+        efficientnet\_b0 & late & 29.15 & 3.10 \\
+        \midrule
+        convnext\_tiny & early & 11.16 & 0.82 \\
+        convnext\_tiny & middle & 28.69 & 3.33 \\
+        convnext\_tiny & late & 10.45 & 1.09 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\textbf{Analysis:} Early layers function as rudimentary edge and texture detectors, and therefore show weaker linear separability. Moving to middle and late layers substantially improves class discrimination for all models. The largest gain is observed in EfficientNet-B0 (58.26\% \(\rightarrow\) 88.63\%), indicating strong hierarchical feature refinement. ConvNeXt-Tiny reaches the highest late-layer probe accuracy (90.49\%), suggesting that its deeper representations are especially transferable for aerial-scene semantics.
 
 % ═══════════════════════════════════════════════════
 \section{Bonus Part A: Key Insights into Model Workings via PCA}
@@ -303,6 +722,12 @@ PCA is applied to the feature vectors extracted from each frozen layer for a fix
 
 \begin{figure}[H]
     \centering
+    \includegraphics[width=\textwidth]{images/scenario_5/s5_resnet50_middle_pca.png}
+    \caption{ResNet50 --- Middle layer (\texttt{layer2}) PCA: transitional structure between low-level overlap and high-level separation.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
     \includegraphics[width=\textwidth]{images/scenario_5/s5_resnet50_late_pca.png}
     \caption{ResNet50 --- Late layer (\texttt{layer4}) PCA: class clusters become clearly separable.}
 \end{figure}
@@ -315,6 +740,12 @@ PCA is applied to the feature vectors extracted from each frozen layer for a fix
 
 \begin{figure}[H]
     \centering
+    \includegraphics[width=\textwidth]{images/scenario_5/s5_efficientnet_b0_middle_pca.png}
+    \caption{EfficientNet-B0 --- Middle layer (\texttt{blocks.3}) PCA.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
     \includegraphics[width=\textwidth]{images/scenario_5/s5_efficientnet_b0_late_pca.png}
     \caption{EfficientNet-B0 --- Late layer (\texttt{blocks.6}) PCA.}
 \end{figure}
@@ -323,6 +754,12 @@ PCA is applied to the feature vectors extracted from each frozen layer for a fix
     \centering
     \includegraphics[width=\textwidth]{images/scenario_5/s5_convnext_tiny_early_pca.png}
     \caption{ConvNeXt-Tiny --- Early layer (\texttt{stages.0}) PCA.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/scenario_5/s5_convnext_tiny_middle_pca.png}
+    \caption{ConvNeXt-Tiny --- Middle layer (\texttt{stages.1}) PCA.}
 \end{figure}
 
 \begin{figure}[H]
